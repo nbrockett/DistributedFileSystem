@@ -58,6 +58,8 @@ def post():
         file_name = data['file_name']
         file_content = data['content']
 
+        print("received file name = ", file_name)
+        print("received content = ", file_content)
 
         file_path = os.path.join(file_server.root_dir, file_name)
         f = open(file_path, 'w')
@@ -65,6 +67,7 @@ def post():
 
 
         print("File {0} written to file server".format(file_path))
+        return "File {0} written to file server".format(file_path)
 
     else:
         raise NotImplementedError
