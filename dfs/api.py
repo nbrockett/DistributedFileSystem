@@ -31,6 +31,8 @@ class File(SpooledTemporaryFile):
             # write read file into temp self
             if response.status_code != 204:
                 self.write(data['data'])
+            else:
+                raise Exception("ERROR: Couldn't read file {0}".format(file_path))
 
     def __exit__(self, exc, value, tb):
 

@@ -7,12 +7,16 @@ from flask import request
 from flask import Response
 from flask import json
 from flask import jsonify
+import requests
 
 import os
 import shutil
 
 app = Flask(__name__)
+
+# TODO: move this to conifg file and load at startup
 FILE_DIR_ROOT = "./files_root"
+SERVING_DIRS = ["/etc", "/src/"]
 
 #
 # # Adding logging functionality
@@ -42,15 +46,8 @@ def get():
         f = open(os.path.join(file_server.root_dir, file_path))
         data = {'data': f.read()}
 
-    # js = json.dumps(data)
-    # resp = Response(js, status=200, mimetype='application/json')
     resp = jsonify(data)
     resp.status_code = 200
-
-    # p = _get_local_path(filepath)
-    # web.header('Last-Modified', time.ctime(os.path.getmtime(p)))
-    # with open(p) as f:
-    #     return f.read()
 
     return resp
 
@@ -70,7 +67,11 @@ def post():
         print("received file name = ", file_name)
         print("received content = ", file_content)
 
-        file_path = os.path.join(file_server.root_dir, file_name)
+        # file_path = os.path.join(file_server.root_dir, file_name)
+        # file_path = file_server.root_dir + '/' + file_name
+        file_path = os.path.join(os.getcwd(), file_server.root_dir[2:], file_name)
+        # print("file path = ", file_path)
+        print("file path = ", os.path.join(os.getcwd(), file_server.root_dir[2:], file_name))
         f = open(file_path, 'w')
         f.write(str(file_content))
 
@@ -83,10 +84,19 @@ def post():
 
 class FileServer:
 
-    def __init__(self, root_dir):
+    def __init__(self, root_dir, host, port):
 
+        self.host_addr = "http://{0}:{1}/".format(FLAGS.host, FLAGS.port)
+        self.host = host
+        self.port = port
         self.root_dir = root_dir
+        self.serving_dir = SERVING_DIRS
+
+        # reset file server
         self.reset()
+
+        # update directory server
+        self.update_dir_server()
 
     def reset(self):
         """ reset root folder directory"""
@@ -98,6 +108,15 @@ class FileServer:
         else:
             os.makedirs(self.root_dir)
 
+    def update_dir_server(self):
+        """ update directory server with new server/directories """
+
+        # post dirs to directory server
+        post_msg = {'server': self.host_addr, 'dirs': self.serving_dir}
+        response = requests.post("http://127.0.0.1:8002/", json=post_msg)
+
+        if response.status_code != 200:
+            raise Exception("Unable to update directory server at {0}".format("http://127.0.0.1:8002/"))
 
 if __name__ == '__main__':
 
@@ -118,7 +137,7 @@ if __name__ == '__main__':
     FLAGS, unparsed = parser.parse_known_args()
 
     # setup file server
-    file_server = FileServer(FILE_DIR_ROOT)
+    file_server = FileServer(FILE_DIR_ROOT, FLAGS.host, FLAGS.port)
 
     # run application with set flags
     app.run(host=FLAGS.host, port=FLAGS.port)
