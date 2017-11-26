@@ -30,18 +30,27 @@ def get():
     # app.logger.warning('warning')
     # app.logger.error('error')
 
-    # return list of all entries in root_dir of file server
-    files = os.listdir(file_server.root_dir)
+    file_path = request.args.get('file_path')
 
-    data = {
-        'files': files,
-    }
-
+    if file_path == None:
+        # return list of all entries in root_dir of file server
+        files = os.listdir(file_server.root_dir)
+        data = {
+            'files': files,
+        }
+    else:
+        f = open(os.path.join(file_server.root_dir, file_path))
+        data = {'data': f.read()}
 
     # js = json.dumps(data)
     # resp = Response(js, status=200, mimetype='application/json')
     resp = jsonify(data)
     resp.status_code = 200
+
+    # p = _get_local_path(filepath)
+    # web.header('Last-Modified', time.ctime(os.path.getmtime(p)))
+    # with open(p) as f:
+    #     return f.read()
 
     return resp
 

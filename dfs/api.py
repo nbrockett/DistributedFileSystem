@@ -1,4 +1,3 @@
-from tempfile import TemporaryFile
 from tempfile import SpooledTemporaryFile
 import requests
 
@@ -21,25 +20,43 @@ class File(SpooledTemporaryFile):
         self._mode = mode
         self.is_cached = cached
 
-        SpooledTemporaryFile.__init__(self, 1048576, mode)
+        SpooledTemporaryFile.__init__(self, 100000, mode)
 
+        # reading file
+        if 'r' in mode:
+            request_arg = {'file_path': file_path}
+            response = requests.get(FILE_SERVER_ADDR, request_arg)
+            data = response.json()
+
+            # write read file into temp self
+            if response.status_code != 204:
+                self.write(data['data'])
 
     def __exit__(self, exc, value, tb):
 
         self.close()
         return False
 
+    def read(self, *args):
+
+        # set reading pos to beginning
+        self.seek(0)
+        print("reading from file")
+        return SpooledTemporaryFile.read(self, *args)
+
     def close(self):
 
         SpooledTemporaryFile.flush(self)
-        self.post()
+        if 'a' in self._mode or 'w' in self._mode:
+            self.post()
 
     def post(self):
 
-        # if 'a' in self._mode or 'w' in self._mode:
-        self.seek(0)
+        # read data
         data = self.read()
         print("data read = ", data)
+
+        # post data to server
         post_msg = {'file_name': self.file_path, 'content': data}
         response = requests.post(FILE_SERVER_ADDR, json=post_msg)
 
