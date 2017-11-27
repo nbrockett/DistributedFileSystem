@@ -22,22 +22,25 @@ def get():
     # app.logger.warning('warning')
     # app.logger.error('error')
     #
-    # file_path = request.args.get('file_path')
-    #
-    # if file_path == None:
-    #     # return list of all entries in root_dir of file server
-    #     files = os.listdir(file_server.root_dir)
-    #     data = {
-    #         'files': files,
-    #     }
-    # else:
-    #     f = open(os.path.join(file_server.root_dir, file_path))
-    #     data = {'data': f.read()}
-    #
-    # resp = jsonify(data)
-    # resp.status_code = 200
-    #
-    # return resp
+    file_path = request.args.get('file_path')
+    dir_path = str(os.path.dirname(file_path))
+
+    print("dir_path = ", dir_path)
+    print("file_path = ", file_path)
+
+    for server, dir_list in directory_server.server_files_dic.items():
+        if dir_path in dir_list:
+            data = {'server': server}
+            resp = jsonify(data)
+            resp.status_code = 200
+
+            return resp
+
+    # could not find server
+    data = {'server': None}
+    resp = jsonify(data)
+    resp.status_code = 204
+    return resp
 
 @app.route('/', methods=['POST'])
 def post():

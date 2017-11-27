@@ -16,7 +16,7 @@ app = Flask(__name__)
 
 # TODO: move this to conifg file and load at startup
 FILE_DIR_ROOT = "./files_root"
-SERVING_DIRS = ["/etc", "/src/"]
+SERVING_DIRS = ["/etc", "/src"]
 
 #
 # # Adding logging functionality
@@ -69,9 +69,11 @@ def post():
 
         # file_path = os.path.join(file_server.root_dir, file_name)
         # file_path = file_server.root_dir + '/' + file_name
-        file_path = os.path.join(os.getcwd(), file_server.root_dir[2:], file_name)
+        # file_path = os.path.join(os.getcwd(), file_server.root_dir[2:], file_name)
         # print("file path = ", file_path)
-        print("file path = ", os.path.join(os.getcwd(), file_server.root_dir[2:], file_name))
+        # print("file path = ", os.path.join(os.getcwd(), file_server.root_dir[2:], file_name))
+
+        file_path = file_server.root_dir + file_name
         f = open(file_path, 'w')
         f.write(str(file_content))
 
@@ -107,6 +109,13 @@ class FileServer:
             os.makedirs(self.root_dir)
         else:
             os.makedirs(self.root_dir)
+
+        for serving_dir in self.serving_dir:
+            # joined_serving_dir = os.path.join(self.root_dir, serving_dir)
+
+            joined_serving_dir = self.root_dir + serving_dir
+            print("making dir: ", joined_serving_dir)
+            os.makedirs(joined_serving_dir)
 
     def update_dir_server(self):
         """ update directory server with new server/directories """
