@@ -1,7 +1,7 @@
 from tempfile import SpooledTemporaryFile
 import requests
 
-# FILE_SERVER_ADDR = "http://127.0.0.1:8001/"
+FILE_SERVER_ADDR = "http://127.0.0.1:8001/"
 DIR_SERVER_ADDR = "http://127.0.0.1:8002/"  # Use directory server here
 
 
@@ -22,13 +22,17 @@ class File(SpooledTemporaryFile):
 
         # find correct server which hosts file in file_path
         self.server = _get_file_server(file_path, DIR_SERVER_ADDR)
+        # self.server = FILE_SERVER_ADDR
 
         SpooledTemporaryFile.__init__(self, 100000, mode)
 
         # reading file
         if 'r' in mode:
             request_arg = {'file_path': file_path}
+            print("getting from server ", self.server)
+            print("the file ", file_path)
             response = requests.get(self.server, request_arg)
+            print("repsonse = ", response)
             data = response.json()
 
             # write read file into temp self

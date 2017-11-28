@@ -48,6 +48,7 @@ def post():
     # if request.headers['Content-Type'] == 'text/plain':
     #     return "Text Message: " + request.data
 
+    print("got post message updating directory server...")
     if request.headers['Content-Type'] == 'application/json':
 
         data = request.json
@@ -55,17 +56,17 @@ def post():
         server = data['server']
         directories = data['dirs']
 
+
         directory_server.update(server, directories)
-        return "Directory Server updated with server {0}".format(server)
+        return "Directory Server updated with server {0} and dirs {1}".format(server, directories)
     else:
         raise NotImplementedError
-
-
 
 class DirectoryServer:
 
     def __init__(self):
 
+        print("initialising directory server")
         #{server: [file directories]}
         self.server_files_dic = {}
 
