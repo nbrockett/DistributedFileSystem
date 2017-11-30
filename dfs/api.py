@@ -2,6 +2,7 @@ from tempfile import SpooledTemporaryFile
 import requests
 from flask import json
 from flask import jsonify
+import time
 
 # ----------------------------------------------------------------------------------------------------------------------
 ## Setup
@@ -43,12 +44,9 @@ class File(SpooledTemporaryFile):
 
         SpooledTemporaryFile.__init__(self, 100000, mode)
 
-        # if file is locked return
-        request_arg = {'file_path': file_path}
-        response = requests.get(LOCK_SERVER_ADDR, request_arg)
-        data = response.json()
-        if data['is_locked']:
-            raise Exception("File {0} is locked!".format(file_path))
+        # poll lock server
+        self.poll_lock_server()
+
 
         # reading file
         if 'r' in mode:
@@ -66,13 +64,30 @@ class File(SpooledTemporaryFile):
                 raise Exception("ERROR: Couldn't read file {0}".format(file_path))
 
         # if writing to file set
-        # if 'w' in mode or 'a' in mode:
-        post_msg = {'file_path': file_path, 'do_lock': True}
-        response = requests.post(LOCK_SERVER_ADDR, json=post_msg)
+        if 'w' in mode or 'a' in mode:
+            post_msg = {'file_path': file_path, 'do_lock': True}
+            response = requests.post(LOCK_SERVER_ADDR, json=post_msg)
 
         if response.status_code != 200:
             print("BAD1")
 
+    def poll_lock_server(self):
+        """ poll lock server until file become unlocked """
+
+        is_locked = True
+        while(is_locked):
+
+            request_arg = {'file_path': self.file_path}
+            response = requests.get(LOCK_SERVER_ADDR, request_arg)
+            data = response.json()
+            if data['is_locked']:
+                print("File {0} is locked. Polling again".format(self.file_path))
+                is_locked = True
+                time.sleep(2)
+            else:
+                is_locked = False
+
+        return
 
 
     def __exit__(self, exc, value, tb):
@@ -93,12 +108,12 @@ class File(SpooledTemporaryFile):
         if 'a' in self._mode or 'w' in self._mode:
             self.post()
 
-        # unlock file
-        post_msg = {'file_path': self.file_path, 'do_lock': False}
-        response = requests.post(LOCK_SERVER_ADDR, json=post_msg)
+            # unlock file
+            post_msg = {'file_path': self.file_path, 'do_lock': False}
+            response = requests.post(LOCK_SERVER_ADDR, json=post_msg)
 
-        if response.status_code != 200:
-            print("BAD2")
+            if response.status_code != 200:
+                print("BAD2")
 
 
     def post(self):
