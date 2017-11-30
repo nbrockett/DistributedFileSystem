@@ -90,13 +90,14 @@ def post():
 
 class FileServer:
 
-    def __init__(self, root_dir, host, port, serving_dir):
+    def __init__(self, root_dir, host, port, serving_dir, dir_server):
 
         self.host_addr = "http://{0}:{1}/".format(FLAGS.host, FLAGS.port)
         self.host = host
         self.port = port
         self.root_dir = root_dir
         self.serving_dir = serving_dir
+        self.dir_server = dir_server
 
         # reset file server
         self.reset()
@@ -129,12 +130,12 @@ class FileServer:
         print("attempting to update directory server")
         # post dirs to directory server
         post_msg = {'server': self.host_addr, 'dirs': self.serving_dir}
-        response = requests.post("http://127.0.0.1:8002/", json=post_msg)
+        response = requests.post(self.dir_server, json=post_msg)
 
         print("status received = ", response.status_code)
 
         if response.status_code != 200:
-            raise Exception("Unable to update directory server at {0}".format("http://127.0.0.1:8002/"))
+            raise Exception("Unable to update directory server at {0}".format(self.dir_server))
 
         print(response.content)
 
@@ -166,13 +167,15 @@ if __name__ == '__main__':
     # extract serving_dirs from config file:
     config_filepath = FLAGS.config
     serving_dirs = ['/']
+    dir_server = None
     with open(config_filepath) as f:
         config_json = json.loads(f.read())
         serving_dirs = config_json['serving_dirs']
+        dir_server = config_json['directory_server']
 
     print("serving dirs = ", serving_dirs)
     # setup file server
-    file_server = FileServer(FILE_DIR_ROOT, FLAGS.host, FLAGS.port, serving_dirs)
+    file_server = FileServer(FILE_DIR_ROOT, FLAGS.host, FLAGS.port, serving_dirs, dir_server)
 
     # run application with set flags
     app.run(host=FLAGS.host, port=FLAGS.port)

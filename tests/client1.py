@@ -1,5 +1,6 @@
 import random
 import dfs.api
+import time
 
 if __name__ == '__main__':
 
@@ -11,15 +12,19 @@ if __name__ == '__main__':
     f2 = dfs.api.open('/etc/blub', 'r')
     read_content = f2.read()
     print("read content = ", read_content)
-    f2.close()
+    # f2.close()
 
 
     # fs1
-    f = dfs.api.open('/home/my_file2', 'w')
-    f.write(str(random.randint(0, 100000)) * 5)
-    f.close()
+    f3 = dfs.api.open('/home/my_file2', 'w')
+    f3.write(str(random.randint(0, 100000)) * 5)
+    f3.close()
 
-    f2 = dfs.api.open('/home/my_file2', 'r')
-    read_content = f2.read()
+    f4 = dfs.api.open('/home/my_file2', 'r')
+    read_content = f4.read()
     print("read content = ", read_content)
+    f4.close()
+
+
+    time.sleep(20)
     f2.close()
