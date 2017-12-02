@@ -13,7 +13,6 @@ import shutil
 
 app = Flask(__name__)
 
-
 @app.route('/', methods=['GET'])
 def get():
 
@@ -55,7 +54,6 @@ def post():
 
         server = data['server']
         directories = data['dirs']
-
 
         directory_server.update(server, directories)
         return "Directory Server updated with server {0} and dirs {1}".format(server, directories)
