@@ -12,13 +12,12 @@ def _load_servers_addresses(config_filepath):
     """ return directory server address given in the config file """
 
     # extract serving_dirs from config file:
-    dir_server = None
     with open(config_filepath) as f:
         config_json = json.loads(f.read())
         dir_server = config_json['directory_server']
         lock_server = config_json['locking_server']
 
-    print("DIRECTORY_SERVER form servers.json = ", dir_server)
+    print("DIRECTORY_SERVER from servers.json = ", dir_server)
     print("LOCK_SERVER from server.json = ", lock_server)
     return dir_server, lock_server
 
@@ -81,10 +80,7 @@ class File(SpooledTemporaryFile):
         # reading file
         if 'r' in mode:
             request_arg = {'file_path': file_path}
-            # print("getting from server ", self.server)
-            # print("the file ", file_path)
             response = requests.get(self.server, request_arg)
-            # print("repsonse = ", response)
             data = response.json()
 
             # write read file into temp self
@@ -165,6 +161,9 @@ def _get_file_server(file_path, dir_server_addr):
 
     request_arg = {'file_path': file_path}
     response = requests.get(dir_server_addr, request_arg)
+    if response.status_code != 200:
+        raise Exception("Could not find file server for file {0}".format(file_path))
+
     data = response.json()
     return data['server']
 

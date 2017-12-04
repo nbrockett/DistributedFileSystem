@@ -40,11 +40,10 @@ def get_lock_status():
     file_path = request.args.get('file_path')
     client_id = request.args.get('client_id')
 
-
     # get lock status
     is_locked = locking_server.is_locked(file_path, client_id)
-    print("Is locked in GET = ", is_locked)
-    print("current locked files = ", locking_server.locked_files)
+    # print("Is locked in GET = ", is_locked)
+    # print("current locked files = ", locking_server.locked_files)
     data = {'is_locked': is_locked}
 
     resp = jsonify(data)
@@ -85,8 +84,8 @@ def post_lock_file():
         print("Is {0} locked? {1}".format(file_path, is_locked))
         print(locking_server.locked_files)
 
-        data = {'lock_status': status}
-        resp = jsonify(data)
+        data_resp = {'lock_status': status}
+        resp = jsonify(data_resp)
         resp.status_code = 200
 
         return resp

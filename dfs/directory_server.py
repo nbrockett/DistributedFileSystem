@@ -15,12 +15,13 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
 def get():
+    """
+    request  : { 'file_path': str}
 
-    # # example for logging
-    # app.logger.info('informing')
-    # app.logger.warning('warning')
-    # app.logger.error('error')
-    #
+    response : { 'server': str }
+    """
+
+
     file_path = request.args.get('file_path')
     dir_path = str(os.path.dirname(file_path))
 
@@ -36,29 +37,33 @@ def get():
             return resp
 
     # could not find server
-    data = {'server': None}
+    data = {'server': 'NotFound'}
     resp = jsonify(data)
     resp.status_code = 204
     return resp
 
 @app.route('/', methods=['POST'])
 def post():
+    """
+    request  : { 'server': str,
+                 'dirs', str}
 
-    # if request.headers['Content-Type'] == 'text/plain':
-    #     return "Text Message: " + request.data
+    response : { 'success': bool }
+    """
 
-    print("got post message updating directory server...")
-    if request.headers['Content-Type'] == 'application/json':
+    print("updating directory server...")
+    data = request.json
 
-        data = request.json
+    server = data['server']
+    directories = data['dirs']
 
-        server = data['server']
-        directories = data['dirs']
+    directory_server.update(server, directories)
+    print("Directory Server updated with server {0} and dirs {1}".format(server, directories))
+    data_resp = {'success': True}
+    resp = jsonify(data_resp)
+    resp.status_code = 200
 
-        directory_server.update(server, directories)
-        return "Directory Server updated with server {0} and dirs {1}".format(server, directories)
-    else:
-        raise NotImplementedError
+    return resp
 
 class DirectoryServer:
 

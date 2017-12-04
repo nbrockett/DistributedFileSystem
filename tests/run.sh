@@ -10,3 +10,6 @@ cd ../dfs && python ./file_server.py --host='127.0.0.1' --port=8001 --config=fs1
 
 echo 'starting file server 2'
 cd ../dfs && python ./file_server.py --host='127.0.0.1' --port=8003 --config=fs2.json&
+
+echo 'starting locking server'
+cd ../dfs && python ./locking_server.py --host='127.0.0.1' --port=8004 &
