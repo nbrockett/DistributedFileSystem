@@ -47,7 +47,6 @@ def get():
         f_path = file_server.root_dir + file_path
         print("getting file ", f_path)
         f = open(f_path)
-        # f = open(os.path.join(file_server.root_dir, file_path))
         data = {'data': f.read()}
 
     resp = jsonify(data)
@@ -70,12 +69,6 @@ def post():
 
         print("received file name = ", file_name)
         print("received content = ", file_content)
-
-        # file_path = os.path.join(file_server.root_dir, file_name)
-        # file_path = file_server.root_dir + '/' + file_name
-        # file_path = os.path.join(os.getcwd(), file_server.root_dir[2:], file_name)
-        # print("file path = ", file_path)
-        # print("file path = ", os.path.join(os.getcwd(), file_server.root_dir[2:], file_name))
 
         file_path = file_server.root_dir + file_name
         f = open(file_path, 'w')
@@ -151,14 +144,14 @@ if __name__ == '__main__':
     parser.add_argument(
         '--port',
         type=int,
-        default=8003,
+        default=8001,
         help='port of server.'
     )
 
     parser.add_argument(
         '--config',
         type=str,
-        default='fs2.json',
+        default='fs1.json',
         help='config file for file server'
     )
 

@@ -7,33 +7,13 @@ from flask import request
 from flask import Response
 from flask import json
 from flask import jsonify
-import requests
-import datetime
-# import Queue
-
-import os
-import shutil
 
 app = Flask(__name__)
 
 
-# SERVING_DIRS = ["/etc", "/src"]
-
-#
-# # Adding logging functionality
-# import logging
-# file_handler = logging.FileHandler('fs.log')
-# app.logger.addHandler(file_handler)
-# app.logger.setLevel(logging.INFO)
-
 
 @app.route('/', methods=['GET'])
 def get():
-
-    # # example for logging
-    # app.logger.info('informing')
-    # app.logger.warning('warning')
-    # app.logger.error('error')
 
     print("GET CALLED!")
     file_path = request.args.get('file_path')
@@ -90,31 +70,12 @@ class LockingServer:
         self.host_addr = "http://{0}:{1}/".format(FLAGS.host, FLAGS.port)
         self.host = host
         self.port = port
-        # self.root_dir = root_dir
-        # self.serving_dir = serving_dir
-        # self.dir_server = dir_server
-        #
-        # # reset file server
-        # self.reset()
-        #
-        # # update directory server
-        # self.update_dir_server()
 
-        #{file_path: [is_locked, datetime, queue]}
+        # self.locked_files = {file_path: [list of client ids]}
         self.locked_files = {}
 
-        # self.client_queue = Queue.Queue()
-
-
     def lock_file(self, file_path, client_id):
-        """ """
-
-        # if not self.is_locked(file_path):
-        #     # time = datetime.datetime.now()
-        #     if file_path not in self.locked_files:
-        #         self.locked_files[file_path] = [True, [client_id]]
-        #     self.locked_files[file_path][0] = True
-        #     self.locked_files[file_path][1].append(client_id)
+        """ lock file if client_id is first to access. """
 
         if file_path not in self.locked_files:
             self.locked_files[file_path] = [client_id]
@@ -122,15 +83,11 @@ class LockingServer:
         elif client_id not in self.locked_files[file_path]:  # if not clients in queue append client to queue
             self.locked_files[file_path].append(client_id)
             return True
-        else: # already locked this file for this client
+        else:  # already locked this file for this client
             return False
 
     def unlock_file(self, file_path, client_id):
-        """ """
-
-        # if self.is_locked(file_path):
-        #     # time = datetime.datetime.now()
-        #     self.locked_files[file_path][0] = False
+        """ unlock file if clien_id is currently accessing file"""
 
         if file_path not in self.locked_files:
             raise Exception("Can't unlock file which isn't locked!")
@@ -141,7 +98,7 @@ class LockingServer:
             return True
 
     def is_locked(self, file_path, client_id):
-        """ """
+        """ return true is file is currently locked by client_id"""
 
         for fp, val in self.locked_files.items():
             if fp == file_path and self.locked_files[fp] != []:
