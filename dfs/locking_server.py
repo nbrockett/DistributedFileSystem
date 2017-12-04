@@ -10,10 +10,31 @@ from flask import jsonify
 
 app = Flask(__name__)
 
+from itertools import count
+
+@app.route('/client_id', methods=['GET'])
+def get_new_client_id():
+    """
+    request  : {}
+
+    response : { 'client_id': int }
+    """
+
+    data = {'client_id': next(locking_server.client_counter)}
+    resp = jsonify(data)
+    resp.status_code = 200
+
+    return resp
 
 
 @app.route('/', methods=['GET'])
-def get():
+def get_lock_status():
+    """
+    request  : { 'file_path': str
+                 'client_id': int}
+
+    response : { 'is_locked': bool }
+    """
 
     print("GET CALLED!")
     file_path = request.args.get('file_path')
@@ -32,7 +53,14 @@ def get():
     return resp
 
 @app.route('/', methods=['POST'])
-def post():
+def post_lock_file():
+    """
+    request  : { 'file_path': str
+                 'do_lcok': bool
+                 'client_id': int}
+
+    response : {'lock_status': bool}
+    """
 
     print("POST CALLED!")
     if request.headers['Content-Type'] == 'application/json':
@@ -57,8 +85,11 @@ def post():
         print("Is {0} locked? {1}".format(file_path, is_locked))
         print(locking_server.locked_files)
 
+        data = {'lock_status': status}
+        resp = jsonify(data)
+        resp.status_code = 200
 
-        return "file_path {0} has been set to locked = {1}, status = {2}".format(file_path, do_lock,status)
+        return resp
 
     else:
         raise NotImplementedError
@@ -70,6 +101,9 @@ class LockingServer:
         self.host_addr = "http://{0}:{1}/".format(FLAGS.host, FLAGS.port)
         self.host = host
         self.port = port
+
+        # locking server keeps track of client ids in system (everytime a file is opened a new client id is given)
+        self.client_counter = count()
 
         # self.locked_files = {file_path: [list of client ids]}
         self.locked_files = {}

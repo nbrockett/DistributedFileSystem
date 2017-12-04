@@ -2,6 +2,7 @@ from tempfile import SpooledTemporaryFile
 import requests
 from flask import json
 from flask import jsonify
+from flask import request
 import time
 from itertools import count
 
@@ -17,21 +18,19 @@ def _load_servers_addresses(config_filepath):
         dir_server = config_json['directory_server']
         lock_server = config_json['locking_server']
 
-    print("DIRECTORY_SERVER = ", dir_server)
-    print("LOCK_SERVER = ", lock_server)
+    print("DIRECTORY_SERVER form servers.json = ", dir_server)
+    print("LOCK_SERVER from server.json = ", lock_server)
     return dir_server, lock_server
 
-DIR_SERVER_ADDR, LOCK_SERVER_ADDR = _load_servers_addresses('servers.json')  # Use directory server here
-# {file_path: SpooledTemporaryFile}
+DIR_SERVER_ADDR, LOCK_SERVER_ADDR = _load_servers_addresses('servers.json')
+# _cached_files = {file_path: SpooledTemporaryFile}
 _cached_files = {}
-# id_counter = count()
-id_counter = 0
-
 # ----------------------------------------------------------------------------------------------------------------------
 
 ## Interface functions:
 def open(*args):
-    # if cached take that file else create new temp file
+
+    # if cached take given file else create new temp file
     file_path = args[0]
     if file_path in _cached_files:
 
@@ -43,6 +42,7 @@ def open(*args):
         if response.status_code != 204:
             return _cached_files[file_path]
 
+    # return new temp file
     return File(*args)
 
 def clear_cache():
@@ -53,14 +53,21 @@ def clear_cache():
 ## Modified Temporary File class
 class File(SpooledTemporaryFile):
 
-    def __init__(self, file_path, mode='rtc', id=0):
+    def __init__(self, file_path, mode='rtc'):
 
         # self.mode = mode
         self.file_path = file_path
         self._mode = mode
         self.is_cached = False
-        # self.client_id = next(id_counter)
-        self.client_id = id
+
+        # get new client ID from locking server
+        try:
+            response = requests.get(LOCK_SERVER_ADDR + 'client_id')
+            data = response.json()
+            self.client_id = data['client_id']
+        except requests.exceptions.ConnectionError:
+            print("Could not find locking server")
+            self.client_id = 0
 
         # find correct server which hosts file in file_path
         self.server = _get_file_server(file_path, DIR_SERVER_ADDR)
@@ -86,17 +93,13 @@ class File(SpooledTemporaryFile):
             else:
                 raise Exception("ERROR: Couldn't read file {0}".format(file_path))
 
-        # if writing to file set
+        # if writing to file lock it
         if 'w' in mode or 'a' in mode:
             post_msg = {'file_path': file_path, 'do_lock': True, 'client_id': self.client_id}
             response = requests.post(LOCK_SERVER_ADDR, json=post_msg)
 
             if response.status_code != 200:
-                print("BAD1")
-
-        # # cache the current file to dictionary
-        # if self.is_cached:
-        #     _cached_files[file_path] = self
+                raise Exception("Could not lock requested file {0}".format(file_path))
 
     def poll_lock_server(self):
         """ poll lock server until file become unlocked """
