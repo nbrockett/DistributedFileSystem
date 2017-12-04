@@ -8,6 +8,8 @@ if __name__ == '__main__':
     # fs1
     f = dfs.api.open('/etc/blub', 'w')
     f.write(str(random.randint(0, 100000)) * 1000)
+    f.write(str(random.randint(0, 100000)) * 1000)
+    f.write(str(random.randint(0, 100000)) * 1000)
     f.close()
 
     t1 = time.clock()
@@ -17,14 +19,16 @@ if __name__ == '__main__':
     f2.close()
     t2 = time.clock()
 
-    f = dfs.api.open('/etc/blub', 'w')
+    f = dfs.api.open('/etc/blub2', 'w')
+    f.write(str(random.randint(0, 100000)) * 1000)
+    f.write(str(random.randint(0, 100000)) * 1000)
     f.write(str(random.randint(0, 100000)) * 1000)
     f.close(cached=True)
 
     # dfs.api.clear_cache()
 
     t3 = time.clock()
-    f2 = dfs.api.open('/etc/blub', 'r')
+    f2 = dfs.api.open('/etc/blub2', 'r')
     read_content = f2.read()
     # print("read content = ", read_content)
     f2.close()

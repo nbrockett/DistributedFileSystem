@@ -29,17 +29,25 @@ _cached_files = {}
 ## Interface functions:
 def open(*args):
 
-    # if cached take given file else create new temp file
+    # if cached and up-to-date take from cache else create new temp file
     file_path = args[0]
     if file_path in _cached_files:
 
+        print("accessing cache directory...")
+        f_cached = _cached_files[file_path]
+
+        # check if cached is the last one modified version
         fs = _get_file_server(file_path, DIR_SERVER_ADDR)
         request_arg = {'file_path': file_path}
-        response = requests.get(fs, request_arg)
-        data = response.json()
+        response = requests.get(fs + 'last_modified', request_arg)
 
-        if response.status_code != 204:
-            return _cached_files[file_path]
+        if response.status_code == 204:
+            raise Exception("Could not get last modified version of {0} from fileserver {1}".format(file_path, fs))
+
+        data = response.json()
+        if data['last_modified'] == f_cached.last_modified:
+            print("returning cached version")
+            return f_cached
 
     # return new temp file
     return File(*args)
@@ -76,12 +84,14 @@ class File(SpooledTemporaryFile):
         # poll lock server
         self.poll_lock_server()
 
+        self.last_modified = None
 
         # reading file
         if 'r' in mode:
             request_arg = {'file_path': file_path}
             response = requests.get(self.server, request_arg)
             data = response.json()
+            self.last_modified = response.headers['last_modified']
 
             # write read file into temp self
             if response.status_code != 204:
@@ -119,7 +129,6 @@ class File(SpooledTemporaryFile):
 
         # set reading pos to beginning
         self.seek(0)
-        print("reading from file")
         return SpooledTemporaryFile.read(self, *args)
 
     def close(self, cached=False):
@@ -130,12 +139,11 @@ class File(SpooledTemporaryFile):
         if 'a' in self._mode or 'w' in self._mode:
             self.post()
 
-            # unlock file
             post_msg = {'file_path': self.file_path, 'do_lock': False, 'client_id': self.client_id}
             response = requests.post(LOCK_SERVER_ADDR, json=post_msg)
 
             if response.status_code != 200:
-                print("BAD2")
+                print("ERROR: Unable to unlock file {0}".format(self.file_path))
 
         if cached is True:
             _cached_files[self.file_path] = self
@@ -145,11 +153,12 @@ class File(SpooledTemporaryFile):
 
         # read data
         data = self.read()
-        print("data read = ", data)
+        # print("data read = ", data)
 
         # post data to server
         post_msg = {'file_name': self.file_path, 'content': data}
         response = requests.post(self.server, json=post_msg)
+        self.last_modified = response.headers['last_modified']
 
         if response.status_code != 200:
             raise Exception("Could not post change of file {0}".format(self.file_path))
