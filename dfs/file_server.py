@@ -8,31 +8,38 @@ from flask import Response
 from flask import json
 from flask import jsonify
 import requests
+import time
 
 import os
 import shutil
 
 app = Flask(__name__)
 
-# TODO: move this to config file and load at startup
-FILE_DIR_ROOT = "./files_root"
-# SERVING_DIRS = ["/etc", "/src"]
+@app.route('/last_modified', methods=['GET'])
+def get_last_modified():
+    """
+    request  : { 'file_path': str}
 
-#
-# # Adding logging functionality
-# import logging
-# file_handler = logging.FileHandler('fs.log')
-# app.logger.addHandler(file_handler)
-# app.logger.setLevel(logging.INFO)
+    response : { 'last_modified': time obj }
+    """
+
+    file_path = request.args.get('file_path')
+    f_path = file_server.root_dir + file_path
+    data = {'last_modified': time.ctime(os.path.getmtime(f_path))}
+    resp = jsonify(data)
+    resp.status_code = 200
+
+
+    return resp
 
 
 @app.route('/', methods=['GET'])
 def get():
+    """
+    request  : { 'file_path': str}
 
-    # # example for logging
-    # app.logger.info('informing')
-    # app.logger.warning('warning')
-    # app.logger.error('error')
+    response : { 'data': TextIOWrapper }
+    """
 
     print("GET CALLED!")
     file_path = request.args.get('file_path')
@@ -47,18 +54,31 @@ def get():
         f_path = file_server.root_dir + file_path
         print("getting file ", f_path)
         f = open(f_path)
+        print(type(f))
         data = {'data': f.read()}
+
+    # resp2 = Response(data)
+    # f_path = file_server.root_dir + file_path
+    # resp2.headers['last_modified'] = os.path.getmtime(f_path)
+    #
+    # return resp2
 
     resp = jsonify(data)
     resp.status_code = 200
-
+    f_path = file_server.root_dir + file_path
+    resp.headers['last_modified'] = time.ctime(os.path.getmtime(f_path))
     return resp
 
 @app.route('/', methods=['POST'])
 def post():
+    """
+    request  : { 'file_name': str,
+                 'content': str }
 
-    # if request.headers['Content-Type'] == 'text/plain':
-    #     return "Text Message: " + request.data
+    response : { 'success': bool }
+    """
+
+    print("POST CALLED")
 
     if request.headers['Content-Type'] == 'application/json':
 
@@ -67,16 +87,20 @@ def post():
         file_name = data['file_name']
         file_content = data['content']
 
-        print("received file name = ", file_name)
-        print("received content = ", file_content)
-
         file_path = file_server.root_dir + file_name
         f = open(file_path, 'w')
         f.write(str(file_content))
 
-
         print("File {0} written to file server".format(file_path))
-        return "File {0} written to file server".format(file_path)
+
+        data_resp = {'success': True}
+        resp = jsonify(data_resp)
+        resp.status_code = 200
+        resp.headers['last_modified'] = time.ctime(os.path.getmtime(file_path))
+
+        print("DATE IN RESPONSE = ", resp.headers['last_modified'])
+
+        return resp
 
     else:
         raise NotImplementedError
@@ -120,17 +144,14 @@ class FileServer:
     def update_dir_server(self):
         """ update directory server with new server/directories """
 
-        print("attempting to update directory server")
         # post dirs to directory server
         post_msg = {'server': self.host_addr, 'dirs': self.serving_dir}
         response = requests.post(self.dir_server, json=post_msg)
 
-        print("status received = ", response.status_code)
-
         if response.status_code != 200:
             raise Exception("Unable to update directory server at {0}".format(self.dir_server))
 
-        print(response.content)
+        print("updated directory server")
 
 if __name__ == '__main__':
 
@@ -165,10 +186,11 @@ if __name__ == '__main__':
         config_json = json.loads(f.read())
         serving_dirs = config_json['serving_dirs']
         dir_server = config_json['directory_server']
+        files_root = config_json['files_root']
 
     print("serving dirs = ", serving_dirs)
     # setup file server
-    file_server = FileServer(FILE_DIR_ROOT, FLAGS.host, FLAGS.port, serving_dirs, dir_server)
+    file_server = FileServer(files_root, FLAGS.host, FLAGS.port, serving_dirs, dir_server)
 
     # run application with set flags
     app.run(host=FLAGS.host, port=FLAGS.port)
