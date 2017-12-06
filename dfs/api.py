@@ -156,7 +156,7 @@ class File(SpooledTemporaryFile):
         # print("data read = ", data)
 
         # post data to server
-        post_msg = {'file_name': self.file_path, 'content': data}
+        post_msg = {'file_path': self.file_path, 'content': data}
         response = requests.post(self.server, json=post_msg)
         self.last_modified = response.headers['last_modified']
 

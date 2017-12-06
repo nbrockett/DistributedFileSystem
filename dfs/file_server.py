@@ -9,6 +9,8 @@ from flask import json
 from flask import jsonify
 import requests
 import time
+import random
+import string
 
 import os
 import shutil
@@ -29,12 +31,11 @@ def get_last_modified():
     resp = jsonify(data)
     resp.status_code = 200
 
-
     return resp
 
 
 @app.route('/', methods=['GET'])
-def get():
+def get_file():
     """
     request  : { 'file_path': str}
 
@@ -44,66 +45,41 @@ def get():
     print("GET CALLED!")
     file_path = request.args.get('file_path')
 
-    if file_path == None:
-        # return list of all entries in root_dir of file server
-        files = os.listdir(file_server.root_dir)
-        data = {
-            'files': files,
-        }
-    else:
-        f_path = file_server.root_dir + file_path
-        print("getting file ", f_path)
-        f = open(f_path)
-        print(type(f))
-        data = {'data': f.read()}
-
-    # resp2 = Response(data)
-    # f_path = file_server.root_dir + file_path
-    # resp2.headers['last_modified'] = os.path.getmtime(f_path)
-    #
-    # return resp2
+    f = file_server.open_file(file_path)
+    data = {'data': f.read()}
 
     resp = jsonify(data)
     resp.status_code = 200
-    f_path = file_server.root_dir + file_path
-    resp.headers['last_modified'] = time.ctime(os.path.getmtime(f_path))
+    resp.headers['last_modified'] = file_server.get_time_stamp(file_path)
     return resp
 
 @app.route('/', methods=['POST'])
-def post():
+def post_file():
     """
-    request  : { 'file_name': str,
+    request  : { 'file_path': str,
                  'content': str }
 
     response : { 'success': bool }
     """
 
-    print("POST CALLED")
+    data = request.json
 
-    if request.headers['Content-Type'] == 'application/json':
+    file_path = data['file_path']
+    file_content = data['content']
 
-        data = request.json
+    file_server.create_file(file_path, file_content)
 
-        file_name = data['file_name']
-        file_content = data['content']
+    print("File {0} written to file server".format(file_path))
 
-        file_path = file_server.root_dir + file_name
-        f = open(file_path, 'w')
-        f.write(str(file_content))
+    data_resp = {'success': True}
+    resp = jsonify(data_resp)
+    resp.status_code = 200
+    resp.headers['last_modified'] = file_server.get_time_stamp(file_path)
 
-        print("File {0} written to file server".format(file_path))
+    print("DATE IN RESPONSE = ", resp.headers['last_modified'])
 
-        data_resp = {'success': True}
-        resp = jsonify(data_resp)
-        resp.status_code = 200
-        resp.headers['last_modified'] = time.ctime(os.path.getmtime(file_path))
+    return resp
 
-        print("DATE IN RESPONSE = ", resp.headers['last_modified'])
-
-        return resp
-
-    else:
-        raise NotImplementedError
 
 class FileServer:
 
@@ -119,8 +95,37 @@ class FileServer:
         # reset file server
         self.reset()
 
+        # {file_path: internal_file_path}
+        self.fpath_to_fpathi = {}
+
         # update directory server
         self.update_dir_server()
+
+    def create_file(self, file_path, file_content):
+        """ create file with internal name"""
+
+        if file_path not in self.fpath_to_fpathi:
+            fname_internal = self.generate_name()
+            file_path2 = os.path.join(self.root_dir, fname_internal)
+        else:  # file already generated
+            file_path2 = self.fpath_to_fpathi[file_path]
+        f = open(file_path2, 'w')
+        f.write(str(file_content))
+
+        # add to internal map
+        self.fpath_to_fpathi[file_path] = file_path2
+
+    def open_file(self, file_path):
+
+        fpath = self.fpath_to_fpathi[file_path]
+        return open(fpath)
+
+    def generate_name(self):
+        return ''.join(random.choices(string.ascii_lowercase + string.digits, k=15))
+
+    def get_time_stamp(self, file_path):
+        fpath = self.fpath_to_fpathi[file_path]
+        return time.ctime(os.path.getmtime(fpath))
 
     def reset(self):
         """ reset root folder directory"""

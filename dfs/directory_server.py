@@ -73,7 +73,6 @@ class DirectoryServer:
         #{server: [file directories]}
         self.server_files_dic = {}
 
-
     def update(self, server, dir_list):
 
         self.server_files_dic[server] = dir_list

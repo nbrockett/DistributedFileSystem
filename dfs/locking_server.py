@@ -131,7 +131,7 @@ class LockingServer:
             return True
 
     def is_locked(self, file_path, client_id):
-        """ return true is file is currently locked by client_id"""
+        """ return true is file is currently locked by client_id """
 
         for fp, val in self.locked_files.items():
             if fp == file_path and self.locked_files[fp] != []:
