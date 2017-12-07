@@ -8,3 +8,4 @@ if __name__ == '__main__':
     f = dfs.api.open('/etc/blub', 'w')
     f.write(str(random.randint(0, 100000)) * 1)
     f.close()
+    print('success')

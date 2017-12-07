@@ -26,8 +26,7 @@ def get_last_modified():
     """
 
     file_path = request.args.get('file_path')
-    f_path = file_server.root_dir + file_path
-    data = {'last_modified': time.ctime(os.path.getmtime(f_path))}
+    data = {'last_modified': file_server.get_time_stamp(file_path)}
     resp = jsonify(data)
     resp.status_code = 200
 
@@ -121,9 +120,13 @@ class FileServer:
         return open(fpath)
 
     def generate_name(self):
+        """ generate internal name only the fileserver knows"""
+
         return ''.join(random.choices(string.ascii_lowercase + string.digits, k=15))
 
     def get_time_stamp(self, file_path):
+        """ get time stamp of last modification """
+
         fpath = self.fpath_to_fpathi[file_path]
         return time.ctime(os.path.getmtime(fpath))
 
@@ -133,18 +136,6 @@ class FileServer:
         # if root doesnt exist create
         if not os.path.exists(self.root_dir):
             os.makedirs(self.root_dir)
-
-        for serving_dir in self.serving_dir:
-            # joined_serving_dir = os.path.join(self.root_dir, serving_dir)
-
-            joined_serving_dir = self.root_dir + serving_dir
-            if os.path.exists(joined_serving_dir):
-                shutil.rmtree(joined_serving_dir)
-                print("making dir: ", joined_serving_dir)
-                os.makedirs(joined_serving_dir)
-            else:
-                print("making dir: ", joined_serving_dir)
-                os.makedirs(joined_serving_dir)
 
     def update_dir_server(self):
         """ update directory server with new server/directories """
@@ -170,14 +161,14 @@ if __name__ == '__main__':
     parser.add_argument(
         '--port',
         type=int,
-        default=8001,
+        default=8003,
         help='port of server.'
     )
 
     parser.add_argument(
         '--config',
         type=str,
-        default='fs1.json',
+        default='fs2.json',
         help='config file for file server'
     )
 

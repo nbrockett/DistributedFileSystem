@@ -126,12 +126,14 @@ class File(SpooledTemporaryFile):
         return
 
     def read(self, *args):
+        """ read from file"""
 
         # set reading pos to beginning
         self.seek(0)
         return SpooledTemporaryFile.read(self, *args)
 
     def close(self, cached=False):
+        """ close file, if cached is set to True then File will be a added to cache before cleanup"""
 
         SpooledTemporaryFile.flush(self)
 
