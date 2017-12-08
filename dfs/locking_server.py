@@ -36,14 +36,12 @@ def get_lock_status():
     response : { 'is_locked': bool }
     """
 
-    print("GET CALLED!")
     file_path = request.args.get('file_path')
     client_id = request.args.get('client_id')
 
     # get lock status
     is_locked = locking_server.is_locked(file_path, client_id)
-    # print("Is locked in GET = ", is_locked)
-    # print("current locked files = ", locking_server.locked_files)
+    print("Is {0} locked for {2}? {1}".format(file_path, is_locked, client_id))
     data = {'is_locked': is_locked}
 
     resp = jsonify(data)
@@ -61,7 +59,6 @@ def post_lock_file():
     response : {'lock_status': bool}
     """
 
-    print("POST CALLED!")
     if request.headers['Content-Type'] == 'application/json':
 
         data = request.json
@@ -70,18 +67,18 @@ def post_lock_file():
         do_lock = data['do_lock']
         client_id = data['client_id']
 
-        print("received file path to lock = ", file_path)
+
         print("client id = ", client_id)
 
         if do_lock:
+            print("received file path to lock = ", file_path)
             status = locking_server.lock_file(file_path, client_id)
+            print("file {0} currently locked for client {1}".format(file_path, client_id))
         else:
+            print("received file path to unlock = ", file_path)
             status = locking_server.unlock_file(file_path, client_id)
+            print("file {0} currently unlocked from client {1}".format(file_path, client_id))
 
-        is_locked = locking_server.is_locked(file_path, client_id)
-
-        print("file_path {0} has been set to locked = {1}, status = {2}".format(file_path, do_lock,status))
-        print("Is {0} locked? {1}".format(file_path, is_locked))
         print(locking_server.locked_files)
 
         data_resp = {'lock_status': status}
@@ -131,7 +128,7 @@ class LockingServer:
             return True
 
     def is_locked(self, file_path, client_id):
-        """ return true is file is currently locked by client_id """
+        """ return true if file is currently locked for client_id """
 
         for fp, val in self.locked_files.items():
             if fp == file_path and self.locked_files[fp] != []:
@@ -139,7 +136,7 @@ class LockingServer:
                     return False
                 else:
                     return True
-        print("end of line in locked")
+        # print("end of line in locked")
         return False
 
 if __name__ == '__main__':

@@ -45,7 +45,11 @@ def get_file():
     file_path = request.args.get('file_path')
 
     f = file_server.open_file(file_path)
-    data = {'data': f.read()}
+    if f is None:
+        data = {'data': None}
+        return jsonify(data)
+    else:
+        data = {'data': f.read()}
 
     resp = jsonify(data)
     resp.status_code = 200
@@ -116,8 +120,11 @@ class FileServer:
 
     def open_file(self, file_path):
 
-        fpath = self.fpath_to_fpathi[file_path]
-        return open(fpath)
+        try:
+            fpath = self.fpath_to_fpathi[file_path]
+            return open(fpath)
+        except KeyError:
+            return None
 
     def generate_name(self):
         """ generate internal name only the fileserver knows"""
@@ -161,14 +168,14 @@ if __name__ == '__main__':
     parser.add_argument(
         '--port',
         type=int,
-        default=8003,
+        default=8001,
         help='port of server.'
     )
 
     parser.add_argument(
         '--config',
         type=str,
-        default='fs2.json',
+        default='fs1.json',
         help='config file for file server'
     )
 

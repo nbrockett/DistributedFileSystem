@@ -33,7 +33,7 @@ def open(*args):
     file_path = args[0]
     if file_path in _cached_files:
 
-        print("accessing cache directory...")
+        print("Accessing cache directory...")
         f_cached = _cached_files[file_path]
 
         # check if cached is the last one modified version
@@ -46,8 +46,10 @@ def open(*args):
 
         data = response.json()
         if data['last_modified'] == f_cached.last_modified:
-            print("returning cached version")
+            print("Returning cached version.")
             return f_cached
+    else:
+        print("File not in cache")
 
     # return new temp file
     return File(*args)
@@ -60,7 +62,7 @@ def clear_cache():
 ## Modified Temporary File class
 class File(SpooledTemporaryFile):
 
-    def __init__(self, file_path, mode='rtc'):
+    def __init__(self, file_path, mode='w'):
 
         # self.mode = mode
         self.file_path = file_path
@@ -91,6 +93,9 @@ class File(SpooledTemporaryFile):
             request_arg = {'file_path': file_path}
             response = requests.get(self.server, request_arg)
             data = response.json()
+            if data['data'] is None:
+                raise Exception("Could not find file {0}".format(file_path))
+
             self.last_modified = response.headers['last_modified']
 
             # write read file into temp self
