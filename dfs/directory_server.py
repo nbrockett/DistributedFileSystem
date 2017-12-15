@@ -14,8 +14,10 @@ import shutil
 app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
-def get():
+def get_fs():
     """
+    request file server address which is responsible for file_path
+
     request  : { 'file_path': str}
 
     response : { 'server': str }
@@ -28,6 +30,7 @@ def get():
     print("dir_path = ", dir_path)
     print("file_path = ", file_path)
 
+    # find file server serving given dir_path
     for server, dir_list in directory_server.server_files_dic.items():
         if dir_path in dir_list:
             data = {'server': server}
@@ -43,8 +46,10 @@ def get():
     return resp
 
 @app.route('/', methods=['POST'])
-def post():
+def post_fs():
     """
+    add file server to the directory server with given directories
+
     request  : { 'server': str,
                  'dirs', str}
 
@@ -57,9 +62,11 @@ def post():
     server = data['server']
     directories = data['dirs']
 
-    directory_server.update(server, directories)
-    print("Directory Server updated with server {0} and dirs {1}".format(server, directories))
-    data_resp = {'success': True}
+    # update file server with new entry
+    stat = directory_server.update(server, directories)
+    if stat is True:
+        print("Directory Server updated with server {0} and dirs {1}".format(server, directories))
+    data_resp = {'success': stat}
     resp = jsonify(data_resp)
     resp.status_code = 200
 
@@ -70,13 +77,20 @@ class DirectoryServer:
     def __init__(self):
 
         print("initialising directory server")
+
         #{server: [file directories]}
         self.server_files_dic = {}
 
     def update(self, server, dir_list):
+        """ add file server to servers dictionary"""
 
-        self.server_files_dic[server] = dir_list
-        print("updated, new server-files state: ", self.server_files_dic)
+        if server not in self.server_files_dic:
+            self.server_files_dic[server] = dir_list
+            print("updated, new server-files state: ", self.server_files_dic)
+            return True
+        else:
+            print("Could not add file server to directory server. It already has been added")
+            return False
 
 if __name__ == '__main__':
 
